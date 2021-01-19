@@ -1,0 +1,88 @@
+<html>
+	<head>
+		<title>Relogin test</title>
+		
+		<!--script type="text/javascript" src="https://dev.accounts.amadeus.com/LoginService/embedAngular"></script-->
+	
+	</head>
+
+	<body>
+		<div id="test">
+			Relogin authentication
+		</div>
+		
+		<div id="id_token">
+			Id_token :
+		</div>
+		
+		<div id="access_token">
+			Access_token :
+		</div>
+		
+		<button id="button_es" type="submit" action="javascript:void()" onclick="loadES()">Load CLP</button>
+		
+		<button id="button_ito" type="submit" action="javascript:void()" onclick="loadITO()">Load CLP ITO</button>
+	</body>
+	
+	 <script type="text/javascript">
+	 	var env = 'uat';
+	 	location.search.substring(1).split('&').forEach((el) => {
+	 		var p = el.split('=');
+	 		if(p[0] === 'env') {
+	 			env = p[1].toLowerCase();
+	 			env = env === 'prd' ? 'www' : env;
+	 		}
+	 	})
+
+        var head = document.getElementsByTagName('head')[0];
+        var host = "https://" + env + ".accounts.amadeus.com";
+        //var host = "https://ncerndobedev0343:31023";
+        var embeddedScript = document.createElement('script');
+        embeddedScript.type = "text/javascript";
+        embeddedScript.id = "clp-embed";
+        embeddedScript.src = host + "/LoginService/embedAngular?service=REG";
+        head.appendChild(embeddedScript);
+
+
+        var context = (function() {
+        	var hashParts = location.hash.substring(1).split('&');
+
+        	var hashParams = {};
+			hashParts.forEach(el => {
+        		elParts = el.split('=');
+
+        		hashParams[elParts[0]] = elParts[1];
+        	})
+
+        	return hashParams;
+        })();
+
+        console.log(context);
+
+         function loadES() {
+			var idToken = context.id_token;
+			var informationMessage = 'By inserting password I confirm that the following has been performed: </br> </br> <ul> <li> The aircraft has been loaded in accordance with the loading instruction including the deviations recorder in the loading report. </li> <li> The load has been secured in accordance with the Company Regulations. </li> <li> There is no evidence that any damaged or leaking packages containing dangerous goods have been loaded on the aircraft. </li> </ul>';
+			var embeddedCLP = new CLP.ReLogin(idToken, 'popup_clp').success(function (accessToken,idToken) {
+				document.getElementById('test').innerHTML = "Relogin successful";
+				document.getElementById('access_token').innerHTML = "Access_token: " + accessToken;
+				document.getElementById('id_token').innerHTML = "Id_token: " + idToken;
+			}).cancel(function() {
+				document.getElementById('test').innerHTML = "Relogin cancelled";
+			}).informationMessage(informationMessage).ito(false).nonce(1);
+			embeddedCLP.init();
+			embeddedCLP.loadPopup();
+		}
+
+		function loadITO() {
+			var idTokenIto = context.id_token;
+			var informationMessageIto = 'Your session has expired.';
+			var embeddedCLPIto = new CLP.ReLogin(idTokenIto, 'popup_clp_ito').success(function loginOkIto(accessToken,idToken) {
+				document.getElementById('test').innerHTML = "Relogin successful";
+				document.getElementById('access_token').innerHTML = "Access_token: " + accessToken;
+				document.getElementById('id_token').innerHTML = "Id_token: " + idToken;
+			}).informationMessage(informationMessageIto).ito(true).nonce(2);
+			embeddedCLPIto.init();
+			embeddedCLPIto.loadPopup();
+		}
+	</script>
+</html>
